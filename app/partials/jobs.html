@@ -1,0 +1,66 @@
+<!-- /partials/offers.html -->
+<div class="searchbox">
+    
+        <div class="formrow">
+            <input ng-model="search" placeholder="Suchbegriffe (Klinik, Stelle) hier eingeben" style="width:300px" type="text">
+             <input ng-model="search_zip" placeholder="PLZ" style="width:50px" type="text" >
+            <select ng-model="search_region" style="width:125px">
+                <option value="">Bundesland</option>
+                    <option value="Baden-Württemberg">Baden-Württemberg</option>
+                    <option value="Bayern">Bayern</option>
+                    <option value="Berlin">Berlin</option>
+                    <option value="Brandenburg">Brandenburg</option>
+                    <option value="Bremen">Bremen</option>
+                    <option value="Hamburg">Hamburg</option>
+                    <option value="Hessen">Hessen</option>
+                    <option value="Mecklenburg-Vorpommern">Mecklenburg-Vorpommern</option>
+                    <option value="Niedersachsen">Niedersachsen</option>
+                    <option value="Nordrhein-Westfalen">Nordrhein-Westfalen</option>
+                    <option value="Rheinland-Pfalz">Rheinland-Pfalz</option>
+                    <option value="Saarland">Saarland</option>
+                    <option value="Sachsen">Sachsen</option>
+                    <option value="Sachsen-Anhalt">Sachsen-Anhalt</option>
+                    <option value="Schleswig-Holstein">Schleswig-Holstein</option>
+                    <option value="Thüringen">Thüringen</option>
+                </select>
+            <select ng-model="search_position">
+            <option value="">Position</option>
+            <option value="Assistenzarzt">Assistenzarzt</option>
+            <option value="Facharzt">Facharzt</option>
+            <option value="Oberarzt">Oberarzt</option>
+            <option value="Funktionsoberarzt">Funktionsoberarzt</option>
+            <option value="Chefarzt">Chefarzt</option>
+            <option value="Professur">Professur</option>
+            </select>
+        </div>
+        
+</div>
+
+<div id="joblist">
+    <div class="sortierung">
+    Sortierung: 
+    <select ng-model="orderProp">
+        <option value="-firstpublished">neueste Oben</option>
+        <option value="firstpublished">älteste Oben</option>
+        <option value="zip">PLZ aufsteigend</option>
+        <option value="-zip">PLZ absteigend</option>
+      </select>
+    </div>
+    <div class="jobshort" ng-repeat="job in jobs | zipFilter:search_zip| filter: {region:search_region} | filter: {position:search_position} | filter:search | orderBy:orderProp">
+
+		<h2 rel="id/{{job.id}}">    			
+    	    <a href="#/jobs/{{job.id}}" title="{{job.title}}">
+	        {{job.title}}
+	        </a>
+	     </h2>
+        <img ng-src="{{job.thumb}}" height="60" width="60">		
+        <div class="teaser">
+    		<p class="address">{{job.clinic}} in {{job.zip}} {{job.city}}</p>
+    		<p class="teasertext">{{job.teaser}}</p>
+			<p ng-show="job.position">Positionen: {{job.position}}</p>
+		    <span class="dateline">{{job.firstpublished | date : 'EEE, dd. MMM yy'}}</span>
+    		<a href="#/jobs/{{job.id}}" title="{{job.title}}" class="readmore"> ...zum vollständigen Angebot</a>
+    	</div>
+    </div>
+</div>
+<!-- /partials/offers.html -->
