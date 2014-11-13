@@ -9,7 +9,7 @@ API Ressource Services
 */
 jobOfferServices.factory('JobListApi', ['$resource','PortalId','ENV',
   function($resource,PortalId,ENV){
-    var apiUrl = (ENV=='dev')?'data/joblist.json':'jobs/view/format/json/';
+    var apiUrl = (ENV=='dev')?'data/joblist.json':'/jobs/view/format/json/';
     return $resource(apiUrl +'?portal='+PortalId, {}, {
       load: {method:'GET', params:{}, isArray:true}
     });
@@ -18,7 +18,7 @@ jobOfferServices.factory('JobListApi', ['$resource','PortalId','ENV',
   
 jobOfferServices.factory('JobDetailApi', ['$resource','ENV',
   function($resource, ENV){
-        var apiUrl = (ENV=='dev')?'data/job-:jobId.json':'job/view/format/json/id/:jobId';
+        var apiUrl = (ENV=='dev')?'data/job-:jobId.json':'/job/view/format/json/id/:jobId';
         return $resource(apiUrl, {}, {
       
     });
