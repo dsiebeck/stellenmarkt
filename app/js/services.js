@@ -7,17 +7,19 @@ var jobOfferServices = angular.module('jobOfferServices', ['ngResource']);
 /**
 API Ressource Services
 */
-jobOfferServices.factory('JobListApi', ['$resource',
-  function($resource){
-    return $resource('data/joblist.json', {}, {
+jobOfferServices.factory('JobListApi', ['$resource','PortalId','ENV',
+  function($resource,PortalId,ENV){
+    var apiUrl = (ENV=='dev')?'data/joblist.json':'jobs/view/format/json/';
+    return $resource(apiUrl +'?portal='+PortalId, {}, {
       load: {method:'GET', params:{}, isArray:true}
     });
   }
 ]);
   
-jobOfferServices.factory('JobDetailApi', ['$resource',
-  function($resource){
-    return $resource('data/job-:jobId.json', {}, {
+jobOfferServices.factory('JobDetailApi', ['$resource','ENV',
+  function($resource, ENV){
+        var apiUrl = (ENV=='dev')?'data/job-:jobId.json':'job/view/format/json/id/:jobId';
+        return $resource(apiUrl, {}, {
       
     });
   }
@@ -48,23 +50,18 @@ jobOfferServices.factory('JobDataStore', ['JobListApi', 'JobDetailApi',
                 return this._jobDetails[jobId];   
             }    
         };
-        
     }
 ]);
 
 //search values
 jobOfferServices.factory('JobSearch',function(){
-    
     return {
         search: '',
         search_zip: '',
         search_region: '',
         search_position : '',
         orderProp : '-firstpublished'
-        
-        
     }    
-    
 });
   
   

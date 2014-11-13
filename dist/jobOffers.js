@@ -389,9 +389,7 @@ $provide.value("$locale", {
 });
 }]);
 ;'use strict';
-
 /* App Module */
-
 var jobOfferApp = angular.module('jobOfferApp', [
   'ngRoute',
   'jobOfferControllers',
@@ -400,8 +398,18 @@ var jobOfferApp = angular.module('jobOfferApp', [
   'jobOfferFilters'
 ]);
 
+//read portal-id and environment from script-tag (src=....js?portal?123)
+var scriptParams = getScriptConfigParams();
+var PortalId = (scriptParams['portal'])?scriptParams['portal']:'default';
+var ENV = (scriptParams['env'])?scriptParams['env']:'production';
+//and set it as application-constant
+jobOfferApp.constant('PortalId',PortalId);
+jobOfferApp.constant('ENV',ENV);
+
+//template-modul (only used for production-build): 
 angular.module('jobOfferApp.templates', []);
 
+//setup routes
 jobOfferApp.config(['$routeProvider',
   function($routeProvider) {
     $routeProvider.
@@ -419,40 +427,28 @@ jobOfferApp.config(['$routeProvider',
   }]);
 
 
-
-function _js_debug(data) {
-    var str = _js_dataToString(data,0);
-    _debug(str);
+function getScriptConfigParams(){
+    var scripts = document.getElementsByTagName('script');
+    var myScript = scripts[ scripts.length - 1 ];
+    var queryString = myScript.src.replace(/^[^\?]+\??/,'');
+    return parseQuery( queryString );
 }
 
-function _js_dataToString(data,level) {
-    var k;
-    
-    level++;
-    var str = '';
-    var einrueck = '';
-    var i;
-    for (i = 1; i < level * 5; i++) {
-        einrueck += ' ';
-    }
-    if (typeof(data) == 'object') {
-        for (k in data) {
-            str += einrueck + k + ':' + _js_dataToString(data[k], level) + "\n";
-        }
-    } else {
-        str = data;
-    }
-    return str;
+function parseQuery ( query ) {
+   var Params = new Object ();
+   if ( ! query ) return Params; // return empty object
+   var Pairs = query.split(/[;&]/);
+   for ( var i = 0; i < Pairs.length; i++ ) {
+      var KeyVal = Pairs[i].split('=');
+      if ( ! KeyVal || KeyVal.length != 2 ) continue;
+      var key = unescape( KeyVal[0] );
+      var val = unescape( KeyVal[1] );
+      val = val.replace(/\+/g, ' ');
+      Params[key] = val;
+   }
+   return Params;
 }
-
-function _debug(str) {
-    if (window.console && console.log) {
-        console.log(str);
-    } else {
-
-
-    }
-};'use strict';
+;'use strict';
 
 /* Controllers */
 
@@ -553,17 +549,19 @@ var jobOfferServices = angular.module('jobOfferServices', ['ngResource']);
 /**
 API Ressource Services
 */
-jobOfferServices.factory('JobListApi', ['$resource',
-  function($resource){
-    return $resource('data/joblist.json', {}, {
+jobOfferServices.factory('JobListApi', ['$resource','PortalId','ENV',
+  function($resource,PortalId,ENV){
+    var apiUrl = (ENV=='dev')?'data/joblist.json':'jobs/view/format/json/';
+    return $resource(apiUrl +'?portal='+PortalId, {}, {
       load: {method:'GET', params:{}, isArray:true}
     });
   }
 ]);
   
-jobOfferServices.factory('JobDetailApi', ['$resource',
-  function($resource){
-    return $resource('data/job-:jobId.json', {}, {
+jobOfferServices.factory('JobDetailApi', ['$resource','ENV',
+  function($resource, ENV){
+        var apiUrl = (ENV=='dev')?'data/job-:jobId.json':'job/view/format/json/id/:jobId';
+        return $resource(apiUrl, {}, {
       
     });
   }
@@ -594,23 +592,18 @@ jobOfferServices.factory('JobDataStore', ['JobListApi', 'JobDetailApi',
                 return this._jobDetails[jobId];   
             }    
         };
-        
     }
 ]);
 
 //search values
 jobOfferServices.factory('JobSearch',function(){
-    
     return {
         search: '',
         search_zip: '',
         search_region: '',
         search_position : '',
         orderProp : '-firstpublished'
-        
-        
     }    
-    
 });
   
   ;angular.module('jobOfferApp.templates', []).run(['$templateCache', function($templateCache) {

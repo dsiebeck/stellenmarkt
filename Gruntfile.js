@@ -67,12 +67,12 @@
                   'app/bower_components/angular-i18n/angular-locale_de-de.js',
                   'app/js/*.js', 
                   'tmp/*.js' ],
-            dest: 'dist/app.js',
+            dest: 'dist/jobOffers.js',
             nonull: true,
           },
           css: {
                 src: ['app/css/app.css'],  
-                dest: 'dist/app.css',
+                dest: 'dist/jobOffers.css',
                 nonull: true,
             
             }
