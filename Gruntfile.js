@@ -66,6 +66,7 @@
                   'app/bower_components/angular-resource/angular-resource.min.js',
                   'app/bower_components/angular-i18n/angular-locale_de-de.js',
                   'app/js/*.js', 
+                  'app/js/utils/nodebug.js', 
                   'tmp/*.js' ],
             dest: 'dist/jobOffers.js',
             nonull: true,
