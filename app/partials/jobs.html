@@ -6,7 +6,7 @@
              <input ng-model="search_zip" placeholder="PLZ" style="width:50px" type="text" >
             <select ng-model="search_region" style="width:125px">
                 <option value="">Bundesland</option>
-                    <option value="Baden-Württemberg">Baden-Württemberg</option>
+                    <option value="Baden-Württemberg">Baden-W&uuml;rttemberg</option>
                     <option value="Bayern">Bayern</option>
                     <option value="Berlin">Berlin</option>
                     <option value="Brandenburg">Brandenburg</option>
@@ -21,7 +21,7 @@
                     <option value="Sachsen">Sachsen</option>
                     <option value="Sachsen-Anhalt">Sachsen-Anhalt</option>
                     <option value="Schleswig-Holstein">Schleswig-Holstein</option>
-                    <option value="Thüringen">Thüringen</option>
+                    <option value="Thüringen">Th&uuml;ringen</option>
                 </select>
             <select ng-model="search_position">
             <option value="">Position</option>
@@ -41,7 +41,7 @@
     Sortierung: 
     <select ng-model="orderProp">
         <option value="-firstpublished">neueste Oben</option>
-        <option value="firstpublished">älteste Oben</option>
+        <option value="firstpublished">&auml;lteste Oben</option>
         <option value="zip">PLZ aufsteigend</option>
         <option value="-zip">PLZ absteigend</option>
       </select>
@@ -59,7 +59,7 @@
     		<p class="teasertext">{{job.teaser}}</p>
 			<p ng-show="job.position">Positionen: {{job.position}}</p>
 		    <span class="dateline">{{job.firstpublished | date : 'EEE, dd. MMM yy'}}</span>
-    		<a href="#/jobs/{{job.id}}" title="{{job.title}}" class="readmore"> ...zum vollständigen Angebot</a>
+    		<a href="#/jobs/{{job.id}}" title="{{job.title}}" class="readmore"> ...zum vollst&auml;ndigen Angebot</a>
     	</div>
     </div>
 </div>
