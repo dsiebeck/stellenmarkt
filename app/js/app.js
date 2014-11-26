@@ -9,9 +9,6 @@ var jobOfferApp = angular.module('jobOfferApp', [
   'jobOfferConfig'
 ]);
 
-
-
-
 //template-modul (only used for production-build): 
 angular.module('jobOfferApp.templates', []);
 

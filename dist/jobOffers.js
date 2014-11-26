@@ -399,9 +399,6 @@ var jobOfferApp = angular.module('jobOfferApp', [
   'jobOfferConfig'
 ]);
 
-
-
-
 //template-modul (only used for production-build): 
 angular.module('jobOfferApp.templates', []);
 
@@ -425,12 +422,14 @@ jobOfferApp.config(['$routeProvider',
 ;/*configuration service*/
 
 var jobOfferConfig = angular.module('jobOfferConfig',[]);
+//read portal-id and environment from script-tag (src=....js?portal?123)
+var scriptParams = _getScriptConfigParams();
+jobOfferConfig.value('scriptParams',scriptParams);
 
-jobOfferConfig.factory('Configuration', ['$log',
-  function($log){
+jobOfferConfig.factory('Configuration', ['$log','scriptParams',
+  function($log,scriptParams){
     
-    //read portal-id and environment from script-tag (src=....js?portal?123)
-    var scriptParams = _getScriptConfigParams();
+    
     
     var config = {
             //store application base url:
@@ -463,9 +462,10 @@ jobOfferConfig.factory('Configuration', ['$log',
     function _isTrue(param){
         return (param && param != '0' && param != 'false')
     }
-    
-        
-    function _getScriptConfigParams(){
+  }
+]);
+
+function _getScriptConfigParams(){
         var scripts = document.getElementsByTagName('script');
         var myScript = scripts[ scripts.length - 1 ];
         var queryString = myScript.src.replace(/^[^\?]+\??/,'');
@@ -485,10 +485,7 @@ jobOfferConfig.factory('Configuration', ['$log',
           Params[key] = val;
        }
        return Params;
-    }   
-  }
-]);
-;'use strict';
+    }   ;'use strict';
 
 /* Controllers */
 
