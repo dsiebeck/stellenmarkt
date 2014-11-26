@@ -7,18 +7,24 @@ var jobOfferServices = angular.module('jobOfferServices', ['ngResource']);
 /**
 API Ressource Services
 */
-jobOfferServices.factory('JobListApi', ['$resource','PortalId','ENV',
-  function($resource,PortalId,ENV){
-    var apiUrl = (ENV=='dev')?'data/joblist.json':'http://master.medxmedia.de/json/index/flatten/true/';
-    return $resource(apiUrl +'?portal='+PortalId, {}, {
+jobOfferServices.factory('JobListApi', ['$resource','Configuration',
+  function($resource,Configuration){
+    
+    var apiUrl = (Configuration.get('ENV')=='dev')?'data/joblist.json':'http://master.medxmedia.de/json/index/flatten/true/';
+    apiUrl += '?portal='+Configuration.get('portalId');
+    var limit = parseInt(Configuration.get('limitListing'));
+    if(limit){
+         apiUrl += '&limit='+limit;
+    }
+    return $resource(apiUrl, {}, {
       load: {method:'GET', params:{}, isArray:true}
     });
   }
 ]);
   
-jobOfferServices.factory('JobDetailApi', ['$resource','ENV',
-  function($resource, ENV){
-        var apiUrl = (ENV=='dev')?'data/job-:jobId.json':'http://master.medxmedia.de/job/view/format/json/id/:jobId';
+jobOfferServices.factory('JobDetailApi', ['$resource','Configuration',
+  function($resource, Configuration){
+        var apiUrl = (Configuration.get('ENV')=='dev')?'data/job-:jobId.json':'http://master.medxmedia.de/job/view/format/json/id/:jobId';
         return $resource(apiUrl, {}, {
     });
   }

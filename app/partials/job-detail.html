@@ -1,5 +1,5 @@
 <div id="content">
-	<a class="button" href="#/jobs">zur &Uuml;bersicht</a>
+	<a class="button" href="{{baseUrl}}#/jobs">zur &Uuml;bersicht</a>
 <div id="jobview" class="jobview clearfix">
 
 	<div class="jobcontent clearfix">
@@ -10,7 +10,7 @@
 	<div class="jobmoreinfo">
 			<div ng-show="job.email">
 			    F&uuml;r R&uuml;ckfragen per eMail wenden Sie sich an 
-			    <a class="mailto" href="{{}}">{{job.email}}</a>
+			    <a class="mailto" href="{{job.email}}">{{job.email}}</a>
 			</div>
 			<div ng-show="job.url">
 			    Weitere Informationen erhalten Sie im Internet unter <a class="exturl" href="{{job.url}}">{{job.url}}</a>
@@ -38,5 +38,5 @@
 
 </div>
 
-<a class="button" href="#/jobs">zur &Uuml;bersicht</a>
+<a class="button" href="{{baseUrl}}#/jobs">zur &Uuml;bersicht</a>
 </div>

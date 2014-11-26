@@ -5,7 +5,19 @@
   <title>Stellenmarkt</title>
   
   <link rel="stylesheet" href="jobOffers.css">
-  <script src="jobOffers.js?portal=4"></script>
+  <!-- 
+  available params for configuration (á la src="jobOffers.js?key=val&key2=val2..."):
+  
+  portal: id/key of portal, will be passed through to server api url
+  limit: max number of displayed entries, will be passed through to server api url
+  nosort: if given and value other than 0 or false, the sort-pulldown will be not displayed
+  nosearch: if given and value other than 0 or false, the search-filters will be not displayed
+    
+  example to show only top 5 entries from portal xy without search and sort:
+    
+  src="jobOffers.js?limit=5&&nosort=1&nosearch=1&portal=xy"
+  -->
+  <script src="jobOffers.js"></script>
 </head>
 <body>
 

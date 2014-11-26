@@ -8,11 +8,13 @@ var jobOfferControllers = angular.module('jobOfferControllers', []);
 
 
 /** Controler for joblist */
-jobOfferControllers.controller('JobListCtrl', ['$scope', 'JobDataStore','JobSearch',
-  function($scope,JobDataStore , JobSearch) {
+jobOfferControllers.controller('JobListCtrl', ['$scope', 'JobDataStore','JobSearch','Configuration',
+  function($scope,JobDataStore , JobSearch,Configuration) {
        
        $scope.jobs = JobDataStore.getJobs();
        
+       $scope.baseUrl = Configuration.get('baseUrl');
+       $scope.config = Configuration.getAll();
        //persistnet filters and sorting:
        
        $scope.search = JobSearch.search;
@@ -44,7 +46,8 @@ jobOfferControllers.controller('JobListCtrl', ['$scope', 'JobDataStore','JobSear
   }]);
 
 /** Controler for detail view */
-jobOfferControllers.controller('JobDetailCtrl', ['$scope', '$routeParams', 'JobDataStore',
-  function($scope, $routeParams, JobDataStore) {
+jobOfferControllers.controller('JobDetailCtrl', ['$scope', '$routeParams', 'JobDataStore','Configuration',
+  function($scope, $routeParams, JobDataStore,Configuration) {
+    $scope.baseUrl = Configuration.get('baseUrl');
      $scope.job = JobDataStore.getJobDetails($routeParams.jobId);
   }]);

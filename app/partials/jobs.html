@@ -1,6 +1,5 @@
 <!-- /partials/offers.html -->
-<div class="searchbox">
-    
+<div class="searchbox" ng-show="config.showSearch">
         <div class="formrow">
             <input ng-model="search" placeholder="Suchbegriffe (Klinik, Stelle) hier eingeben" style="width:300px" type="text">
              <input ng-model="search_zip" placeholder="PLZ" style="width:50px" type="text" >
@@ -33,12 +32,11 @@
             <option value="Professur">Professur</option>
             </select>
         </div>
-        
 </div>
 
 <div id="joblist">
-    <div class="sortierung">
-    Sortierung: 
+    <div class="sortierung" ng-show="config.showSort">
+    <label>Sortierung:</label>
     <select ng-model="orderProp">
         <option value="-firstpublished">neueste Oben</option>
         <option value="firstpublished">&auml;lteste Oben</option>
@@ -49,7 +47,7 @@
     <div class="jobshort" ng-repeat="job in jobs | zipFilter:search_zip| filter: {region:search_region} | filter: {position:search_position} | filter:search | orderBy:orderProp">
 
 		<h2 rel="id/{{job.id}}">    			
-    	    <a href="#/jobs/{{job.id}}" title="{{job.title}}">
+    	    <a href="{{baseUrl}}#/jobs/{{job.id}}" title="{{job.title}}">
 	        {{job.title}}
 	        </a>
 	     </h2>
@@ -59,7 +57,7 @@
     		<p class="teasertext">{{job.teaser}}</p>
 			<p ng-show="job.position">Positionen: {{job.position}}</p>
 		    <span class="dateline">{{job.firstpublished | date : 'EEE, dd. MMM yy'}}</span>
-    		<a href="#/jobs/{{job.id}}" title="{{job.title}}" class="readmore"> ...zum vollst&auml;ndigen Angebot</a>
+    		<a href="{{baseUrl}}#/jobs/{{job.id}}" title="{{job.title}}" class="readmore"> ...zum vollst&auml;ndigen Angebot</a>
     	</div>
     </div>
 </div>

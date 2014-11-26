@@ -395,16 +395,12 @@ var jobOfferApp = angular.module('jobOfferApp', [
   'jobOfferControllers',
   'jobOfferServices',
   'jobOfferApp.templates',
-  'jobOfferFilters'
+  'jobOfferFilters',
+  'jobOfferConfig'
 ]);
 
-//read portal-id and environment from script-tag (src=....js?portal?123)
-var scriptParams = getScriptConfigParams();
-var PortalId = (scriptParams['portal'])?scriptParams['portal']:'default';
-var ENV = (scriptParams['env'])?scriptParams['env']:'production';
-//and set it as application-constant
-jobOfferApp.constant('PortalId',PortalId);
-jobOfferApp.constant('ENV',ENV);
+
+
 
 //template-modul (only used for production-build): 
 angular.module('jobOfferApp.templates', []);
@@ -426,28 +422,72 @@ jobOfferApp.config(['$routeProvider',
       });
   }]);
 
+;/*configuration service*/
 
-function getScriptConfigParams(){
-    var scripts = document.getElementsByTagName('script');
-    var myScript = scripts[ scripts.length - 1 ];
-    var queryString = myScript.src.replace(/^[^\?]+\??/,'');
-    return parseQuery( queryString );
-}
+var jobOfferConfig = angular.module('jobOfferConfig',[]);
 
-function parseQuery ( query ) {
-   var Params = new Object ();
-   if ( ! query ) return Params; // return empty object
-   var Pairs = query.split(/[;&]/);
-   for ( var i = 0; i < Pairs.length; i++ ) {
-      var KeyVal = Pairs[i].split('=');
-      if ( ! KeyVal || KeyVal.length != 2 ) continue;
-      var key = unescape( KeyVal[0] );
-      var val = unescape( KeyVal[1] );
-      val = val.replace(/\+/g, ' ');
-      Params[key] = val;
-   }
-   return Params;
-}
+jobOfferConfig.factory('Configuration', ['$log',
+  function($log){
+    
+    //read portal-id and environment from script-tag (src=....js?portal?123)
+    var scriptParams = _getScriptConfigParams();
+    
+    var config = {
+            //store application base url:
+            baseUrl:location.protocol+'//'+location.host+location.pathname+location.search,
+            portalId : (scriptParams['portal'])?scriptParams['portal']:'default',
+            ENV : (scriptParams['env'])?scriptParams['env']:'production',
+            limitListing : (scriptParams['limit'])?scriptParams['limit']:'',
+            imgsize : (scriptParams['imgsize'])?scriptParams['imgsize']:'',
+            showSearch : (_isTrue(scriptParams['nosearch']))?false:true,
+            showSort : (_isTrue(scriptParams['nosort']))?false:true
+        };
+    
+    //_js_debug(config);
+    
+    return {
+        
+        get:function(key){
+            if(angular.isUndefined(config[key])){
+                $log.error('Config: no such key: '+key);
+                return '';
+            }
+            return config[key];
+        },
+        getAll: function(){
+            return config;   
+        }
+        
+        };
+    
+    function _isTrue(param){
+        return (param && param != '0' && param != 'false')
+    }
+    
+        
+    function _getScriptConfigParams(){
+        var scripts = document.getElementsByTagName('script');
+        var myScript = scripts[ scripts.length - 1 ];
+        var queryString = myScript.src.replace(/^[^\?]+\??/,'');
+        return _parseQuery( queryString );
+    }
+    
+    function _parseQuery ( query ) {
+       var Params = new Object ();
+       if ( ! query ) return Params; // return empty object
+       var Pairs = query.split(/[;&]/);
+       for ( var i = 0; i < Pairs.length; i++ ) {
+          var KeyVal = Pairs[i].split('=');
+          if ( ! KeyVal || KeyVal.length != 2 ) continue;
+          var key = unescape( KeyVal[0] );
+          var val = unescape( KeyVal[1] );
+          val = val.replace(/\+/g, ' ');
+          Params[key] = val;
+       }
+       return Params;
+    }   
+  }
+]);
 ;'use strict';
 
 /* Controllers */
@@ -458,11 +498,13 @@ var jobOfferControllers = angular.module('jobOfferControllers', []);
 
 
 /** Controler for joblist */
-jobOfferControllers.controller('JobListCtrl', ['$scope', 'JobDataStore','JobSearch',
-  function($scope,JobDataStore , JobSearch) {
+jobOfferControllers.controller('JobListCtrl', ['$scope', 'JobDataStore','JobSearch','Configuration',
+  function($scope,JobDataStore , JobSearch,Configuration) {
        
        $scope.jobs = JobDataStore.getJobs();
        
+       $scope.baseUrl = Configuration.get('baseUrl');
+       $scope.config = Configuration.getAll();
        //persistnet filters and sorting:
        
        $scope.search = JobSearch.search;
@@ -494,8 +536,9 @@ jobOfferControllers.controller('JobListCtrl', ['$scope', 'JobDataStore','JobSear
   }]);
 
 /** Controler for detail view */
-jobOfferControllers.controller('JobDetailCtrl', ['$scope', '$routeParams', 'JobDataStore',
-  function($scope, $routeParams, JobDataStore) {
+jobOfferControllers.controller('JobDetailCtrl', ['$scope', '$routeParams', 'JobDataStore','Configuration',
+  function($scope, $routeParams, JobDataStore,Configuration) {
+    $scope.baseUrl = Configuration.get('baseUrl');
      $scope.job = JobDataStore.getJobDetails($routeParams.jobId);
   }]);
 ;'use strict';
@@ -549,18 +592,24 @@ var jobOfferServices = angular.module('jobOfferServices', ['ngResource']);
 /**
 API Ressource Services
 */
-jobOfferServices.factory('JobListApi', ['$resource','PortalId','ENV',
-  function($resource,PortalId,ENV){
-    var apiUrl = (ENV=='dev')?'data/joblist.json':'http://master.medxmedia.de/json/index/flatten/true/';
-    return $resource(apiUrl +'?portal='+PortalId, {}, {
+jobOfferServices.factory('JobListApi', ['$resource','Configuration',
+  function($resource,Configuration){
+    
+    var apiUrl = (Configuration.get('ENV')=='dev')?'data/joblist.json':'http://master.medxmedia.de/json/index/flatten/true/';
+    apiUrl += '?portal='+Configuration.get('portalId');
+    var limit = parseInt(Configuration.get('limitListing'));
+    if(limit){
+         apiUrl += '&limit='+limit;
+    }
+    return $resource(apiUrl, {}, {
       load: {method:'GET', params:{}, isArray:true}
     });
   }
 ]);
   
-jobOfferServices.factory('JobDetailApi', ['$resource','ENV',
-  function($resource, ENV){
-        var apiUrl = (ENV=='dev')?'data/job-:jobId.json':'http://master.medxmedia.de/job/view/format/json/id/:jobId';
+jobOfferServices.factory('JobDetailApi', ['$resource','Configuration',
+  function($resource, Configuration){
+        var apiUrl = (Configuration.get('ENV')=='dev')?'data/job-:jobId.json':'http://master.medxmedia.de/job/view/format/json/id/:jobId';
         return $resource(apiUrl, {}, {
     });
   }
@@ -607,7 +656,7 @@ jobOfferServices.factory('JobSearch',function(){
   
   ;function _js_debug(){};angular.module('jobOfferApp.templates', []).run(['$templateCache', function($templateCache) {
   $templateCache.put("partials/job-detail.html",
-    "<div id=content><a class=button href=#/jobs>zur &Uuml;bersicht</a><div id=jobview class=\"jobview clearfix\"><div class=\"jobcontent clearfix\"><img ng-src=http://dgg.medxmedia.de/media/pictures/650s0_{{job.headimg}}><div ng-bind-html=\"job.output | sanitize\"></div></div><div class=jobmoreinfo><div ng-show=job.email>F&uuml;r R&uuml;ckfragen per eMail wenden Sie sich an <a class=mailto href={{}}>{{job.email}}</a></div><div ng-show=job.url>Weitere Informationen erhalten Sie im Internet unter <a class=exturl href={{job.url}}>{{job.url}}</a></div><div ng-show=job.pdf>Sie k&ouml;nnen die Anzeige <a target=_blank href=\"http://master.medxmedia.de/job/view/id/{{job.id}}/format/pdf/\">hier als PDF zum Ausdrucken herunterladen.</a></div>Die Anzeige wurde ver&ouml;ffentlicht am {{job.firstpublished | date : 'EEEE, dd. MMMM yyyy'}}.</div><div id=fb-root class=fb_reset><script async src=http://connect.facebook.net/de_DE/all.js></script><div style=\"position: absolute; top: -10000px; height: 0px; width: 0px\"><div><iframe frameborder=0 name=fb_xdm_frame_http allowtransparency=true scrolling=no id=fb_xdm_frame_http aria-hidden=true title=\"Facebook Cross Domain Communication Frame\" tabindex=-1 style=\"border: medium none\" src=\"http://static.ak.facebook.com/connect/xd_arbiter/QjK2hWv6uak.js?version=41#channel=f1e4516a340cb8e&amp;origin=http%3A%2F%2Fwww.dggeriatrie.de\"></iframe><iframe frameborder=0 name=fb_xdm_frame_https allowtransparency=true scrolling=no id=fb_xdm_frame_https aria-hidden=true title=\"Facebook Cross Domain Communication Frame\" tabindex=-1 style=\"border: medium none\" src=\"https://s-static.ak.facebook.com/connect/xd_arbiter/QjK2hWv6uak.js?version=41#channel=f1e4516a340cb8e&amp;origin=http%3A%2F%2Fwww.dggeriatrie.de\"></iframe></div></div><div style=\"position: absolute; top: -10000px; height: 0px; width: 0px\"><div></div></div></div><script>window.fbAsyncInit = function() {\n" +
+    "<div id=content><a class=button href={{baseUrl}}#/jobs>zur &Uuml;bersicht</a><div id=jobview class=\"jobview clearfix\"><div class=\"jobcontent clearfix\"><img ng-src=http://dgg.medxmedia.de/media/pictures/650s0_{{job.headimg}}><div ng-bind-html=\"job.output | sanitize\"></div></div><div class=jobmoreinfo><div ng-show=job.email>F&uuml;r R&uuml;ckfragen per eMail wenden Sie sich an <a class=mailto href={{job.email}}>{{job.email}}</a></div><div ng-show=job.url>Weitere Informationen erhalten Sie im Internet unter <a class=exturl href={{job.url}}>{{job.url}}</a></div><div ng-show=job.pdf>Sie k&ouml;nnen die Anzeige <a target=_blank href=\"http://master.medxmedia.de/job/view/id/{{job.id}}/format/pdf/\">hier als PDF zum Ausdrucken herunterladen.</a></div>Die Anzeige wurde ver&ouml;ffentlicht am {{job.firstpublished | date : 'EEEE, dd. MMMM yyyy'}}.</div><div id=fb-root class=fb_reset><script async src=http://connect.facebook.net/de_DE/all.js></script><div style=\"position: absolute; top: -10000px; height: 0px; width: 0px\"><div><iframe frameborder=0 name=fb_xdm_frame_http allowtransparency=true scrolling=no id=fb_xdm_frame_http aria-hidden=true title=\"Facebook Cross Domain Communication Frame\" tabindex=-1 style=\"border: medium none\" src=\"http://static.ak.facebook.com/connect/xd_arbiter/QjK2hWv6uak.js?version=41#channel=f1e4516a340cb8e&amp;origin=http%3A%2F%2Fwww.dggeriatrie.de\"></iframe><iframe frameborder=0 name=fb_xdm_frame_https allowtransparency=true scrolling=no id=fb_xdm_frame_https aria-hidden=true title=\"Facebook Cross Domain Communication Frame\" tabindex=-1 style=\"border: medium none\" src=\"https://s-static.ak.facebook.com/connect/xd_arbiter/QjK2hWv6uak.js?version=41#channel=f1e4516a340cb8e&amp;origin=http%3A%2F%2Fwww.dggeriatrie.de\"></iframe></div></div><div style=\"position: absolute; top: -10000px; height: 0px; width: 0px\"><div></div></div></div><script>window.fbAsyncInit = function() {\n" +
     "    FB.init({appId: '', status: true, cookie: true, xfbml: true});\n" +
     "  };\n" +
     "  (function() {\n" +
@@ -615,7 +664,7 @@ jobOfferServices.factory('JobSearch',function(){
     "    e.src = document.location.protocol +\n" +
     "      '//connect.facebook.net/de_DE/all.js';\n" +
     "    document.getElementById('fb-root').appendChild(e);\n" +
-    "  }());</script><div class=fblike><fb:like font=arial layout=button_count href=http://www.dggeriatrie.de/aerzte/stellenmarkt/Oberarzt+mw+f%C3%BCr+Fachabteilung+Innere+Medizin+II+Akut-Geriatrie.314.html class=fb_iframe_widget fb-xfbml-state=rendered fb-iframe-plugin-query=\"app_id=&amp;font=arial&amp;href=http%3A%2F%2Fwww.dggeriatrie.de%2Faerzte%2Fstellenmarkt%2FOberarzt%2Bmw%2Bf%25C3%25BCr%2BFachabteilung%2BInnere%2BMedizin%2BII%2BAkut-Geriatrie.314.html&amp;layout=button_count&amp;locale=de_DE&amp;sdk=joey\"><span style=\"vertical-align: bottom; width: 111px; height: 20px\"><iframe frameborder=0 width=1000px height=1000px name=f19ce0220cbeec4 allowtransparency=true scrolling=no title=\"fb:like Facebook Social Plugin\" style=\"border: medium none; visibility: visible; width: 111px; height: 20px\" src=\"http://www.facebook.com/plugins/like.php?app_id=&amp;channel=http%3A%2F%2Fstatic.ak.facebook.com%2Fconnect%2Fxd_arbiter%2FQjK2hWv6uak.js%3Fversion%3D41%23cb%3Df21b98127c0eefa%26domain%3Dwww.dggeriatrie.de%26origin%3Dhttp%253A%252F%252Fwww.dggeriatrie.de%252Ff1e4516a340cb8e%26relation%3Dparent.parent&amp;font=arial&amp;href=http%3A%2F%2Fwww.dggeriatrie.de%2Faerzte%2Fstellenmarkt%2FOberarzt%2Bmw%2Bf%25C3%25BCr%2BFachabteilung%2BInnere%2BMedizin%2BII%2BAkut-Geriatrie.314.html&amp;layout=button_count&amp;locale=de_DE&amp;sdk=joey\"></iframe></span></fb:like></div></div><a class=button href=#/jobs>zur &Uuml;bersicht</a></div>");
+    "  }());</script><div class=fblike><fb:like font=arial layout=button_count href=http://www.dggeriatrie.de/aerzte/stellenmarkt/Oberarzt+mw+f%C3%BCr+Fachabteilung+Innere+Medizin+II+Akut-Geriatrie.314.html class=fb_iframe_widget fb-xfbml-state=rendered fb-iframe-plugin-query=\"app_id=&amp;font=arial&amp;href=http%3A%2F%2Fwww.dggeriatrie.de%2Faerzte%2Fstellenmarkt%2FOberarzt%2Bmw%2Bf%25C3%25BCr%2BFachabteilung%2BInnere%2BMedizin%2BII%2BAkut-Geriatrie.314.html&amp;layout=button_count&amp;locale=de_DE&amp;sdk=joey\"><span style=\"vertical-align: bottom; width: 111px; height: 20px\"><iframe frameborder=0 width=1000px height=1000px name=f19ce0220cbeec4 allowtransparency=true scrolling=no title=\"fb:like Facebook Social Plugin\" style=\"border: medium none; visibility: visible; width: 111px; height: 20px\" src=\"http://www.facebook.com/plugins/like.php?app_id=&amp;channel=http%3A%2F%2Fstatic.ak.facebook.com%2Fconnect%2Fxd_arbiter%2FQjK2hWv6uak.js%3Fversion%3D41%23cb%3Df21b98127c0eefa%26domain%3Dwww.dggeriatrie.de%26origin%3Dhttp%253A%252F%252Fwww.dggeriatrie.de%252Ff1e4516a340cb8e%26relation%3Dparent.parent&amp;font=arial&amp;href=http%3A%2F%2Fwww.dggeriatrie.de%2Faerzte%2Fstellenmarkt%2FOberarzt%2Bmw%2Bf%25C3%25BCr%2BFachabteilung%2BInnere%2BMedizin%2BII%2BAkut-Geriatrie.314.html&amp;layout=button_count&amp;locale=de_DE&amp;sdk=joey\"></iframe></span></fb:like></div></div><a class=button href={{baseUrl}}#/jobs>zur &Uuml;bersicht</a></div>");
   $templateCache.put("partials/jobs.html",
-    "<div class=searchbox><div class=formrow><input ng-model=search placeholder=\"Suchbegriffe (Klinik, Stelle) hier eingeben\" style=width:300px> <input ng-model=search_zip placeholder=PLZ style=width:50px><select ng-model=search_region style=width:125px><option value=\"\">Bundesland</option><option value=Baden-Württemberg>Baden-W&uuml;rttemberg</option><option value=Bayern>Bayern</option><option value=Berlin>Berlin</option><option value=Brandenburg>Brandenburg</option><option value=Bremen>Bremen</option><option value=Hamburg>Hamburg</option><option value=Hessen>Hessen</option><option value=Mecklenburg-Vorpommern>Mecklenburg-Vorpommern</option><option value=Niedersachsen>Niedersachsen</option><option value=Nordrhein-Westfalen>Nordrhein-Westfalen</option><option value=Rheinland-Pfalz>Rheinland-Pfalz</option><option value=Saarland>Saarland</option><option value=Sachsen>Sachsen</option><option value=Sachsen-Anhalt>Sachsen-Anhalt</option><option value=Schleswig-Holstein>Schleswig-Holstein</option><option value=Thüringen>Th&uuml;ringen</option></select><select ng-model=search_position><option value=\"\">Position</option><option value=Assistenzarzt>Assistenzarzt</option><option value=Facharzt>Facharzt</option><option value=Oberarzt>Oberarzt</option><option value=Funktionsoberarzt>Funktionsoberarzt</option><option value=Chefarzt>Chefarzt</option><option value=Professur>Professur</option></select></div></div><div id=joblist><div class=sortierung>Sortierung:<select ng-model=orderProp><option value=-firstpublished>neueste Oben</option><option value=firstpublished>&auml;lteste Oben</option><option value=zip>PLZ aufsteigend</option><option value=-zip>PLZ absteigend</option></select></div><div class=jobshort ng-repeat=\"job in jobs | zipFilter:search_zip| filter: {region:search_region} | filter: {position:search_position} | filter:search | orderBy:orderProp\"><h2 rel=id/{{job.id}}><a href=#/jobs/{{job.id}} title={{job.title}}>{{job.title}}</a></h2><img ng-src={{job.thumb}} height=60 width=60><div class=teaser><p class=address>{{job.clinic}} in {{job.zip}} {{job.city}}</p><p class=teasertext>{{job.teaser}}</p><p ng-show=job.position>Positionen: {{job.position}}</p><span class=dateline>{{job.firstpublished | date : 'EEE, dd. MMM yy'}}</span> <a href=#/jobs/{{job.id}} title={{job.title}} class=readmore>...zum vollst&auml;ndigen Angebot</a></div></div></div>");
+    "<div class=searchbox ng-show=config.showSearch><div class=formrow><input ng-model=search placeholder=\"Suchbegriffe (Klinik, Stelle) hier eingeben\" style=width:300px> <input ng-model=search_zip placeholder=PLZ style=width:50px><select ng-model=search_region style=width:125px><option value=\"\">Bundesland</option><option value=Baden-Württemberg>Baden-W&uuml;rttemberg</option><option value=Bayern>Bayern</option><option value=Berlin>Berlin</option><option value=Brandenburg>Brandenburg</option><option value=Bremen>Bremen</option><option value=Hamburg>Hamburg</option><option value=Hessen>Hessen</option><option value=Mecklenburg-Vorpommern>Mecklenburg-Vorpommern</option><option value=Niedersachsen>Niedersachsen</option><option value=Nordrhein-Westfalen>Nordrhein-Westfalen</option><option value=Rheinland-Pfalz>Rheinland-Pfalz</option><option value=Saarland>Saarland</option><option value=Sachsen>Sachsen</option><option value=Sachsen-Anhalt>Sachsen-Anhalt</option><option value=Schleswig-Holstein>Schleswig-Holstein</option><option value=Thüringen>Th&uuml;ringen</option></select><select ng-model=search_position><option value=\"\">Position</option><option value=Assistenzarzt>Assistenzarzt</option><option value=Facharzt>Facharzt</option><option value=Oberarzt>Oberarzt</option><option value=Funktionsoberarzt>Funktionsoberarzt</option><option value=Chefarzt>Chefarzt</option><option value=Professur>Professur</option></select></div></div><div id=joblist><div class=sortierung ng-show=config.showSort><label>Sortierung:</label><select ng-model=orderProp><option value=-firstpublished>neueste Oben</option><option value=firstpublished>&auml;lteste Oben</option><option value=zip>PLZ aufsteigend</option><option value=-zip>PLZ absteigend</option></select></div><div class=jobshort ng-repeat=\"job in jobs | zipFilter:search_zip| filter: {region:search_region} | filter: {position:search_position} | filter:search | orderBy:orderProp\"><h2 rel=id/{{job.id}}><a href={{baseUrl}}#/jobs/{{job.id}} title={{job.title}}>{{job.title}}</a></h2><img ng-src={{job.thumb}} height=60 width=60><div class=teaser><p class=address>{{job.clinic}} in {{job.zip}} {{job.city}}</p><p class=teasertext>{{job.teaser}}</p><p ng-show=job.position>Positionen: {{job.position}}</p><span class=dateline>{{job.firstpublished | date : 'EEE, dd. MMM yy'}}</span> <a href={{baseUrl}}#/jobs/{{job.id}} title={{job.title}} class=readmore>...zum vollst&auml;ndigen Angebot</a></div></div></div>");
 }]);
